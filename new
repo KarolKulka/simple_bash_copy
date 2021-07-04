@@ -1,0 +1,86 @@
+#!/bin/bash
+
+#Deklaracja zmiennych
+SOURCE_DIR="source_dir"
+DESTINATION_DIR=''
+INCREMENTOR=0
+
+#Funkcja sprawdzajaca czy sciezka pliku zawiera na poczatku nazwe katalogu zapisanego w zmiennej SOURCE_DIR
+add_source_dir_prefix() {
+  if [[ ! $1 =~ ^$SOURCE_DIR ]]; then
+    echo "$SOURCE_DIR/$1"
+    return
+  fi
+  echo "$1"
+  return
+}
+
+#Funkcja sprawdzajaca czy nazwa pliku zawiera na koncu .txt
+add_txt_sufix() {
+  if [[ ! $1 =~ .+\.txt$ ]]; then
+    #echo w przypadku funkcji nie tylko wyswietla wynik w konsole ale pozwala na przechwycenie go podczas wywolania funkcji
+    echo "$1.txt"
+    #konczy wykonywanie danej funkcji
+    return
+  fi
+  echo $1
+  return
+}
+
+#Petla while wykonujaca sie tak dlugo jak warunek jest spelniony
+# warunek -z "$DESTINATION_DIR" sprawdza czy wartosc zmiennej nie jest pusta
+while [ -z "$DESTINATION_DIR" ]; do
+  #Funkcja warunkowa if wykonujaca blok po then gdy warunek jest spelniony i blok po else gdy warunek nie jest spelniony
+  if [ $INCREMENTOR == 0 ]; then
+    #wyswietlenie informacji w konsoli
+    #parametr -e powoduje wyswietlenie w nowej lini
+    echo -e "Destination directory name is empty!"
+    INCREMENTOR=$INCREMENTOR+1
+  else
+    echo -e "You have passed empty string as directory name!"
+  fi
+  #odczytanie danych wprowadzonych przez uzytkownika w konsoli
+  #parametr -p powoduje ze wartosc wpisana przez uzytkownika pojawi sie na koncu lini komunikatu
+  read -p "Enter destination directory (if it doesn't exist it will be created):" DESTINATION_DIR
+  echo $DESTINATION_DIR
+done
+
+# warunek -d "$DESTINATION_DIR" sprawdza czy folder istnieje
+if [ -d "$DESTINATION_DIR" ]; then
+  echo -e "Directory exists"
+else
+  #tworzy wskazany folder
+  mkdir "$DESTINATION_DIR"
+  echo -e "Directory created"
+fi
+
+echo -e "Below there is a list of all files in $SOURCE_DIR"
+#iteruje przez kazdy wynik funkcji ls ktora sluzy do listowania zawartosci katalogu
+for FILE in $(ls source_dir/*.txt); do
+  echo $FILE
+done
+
+echo -e "You can name up to 4 files from list above to copy into destination directory - separate file names with space"
+#w tym wypadku read wczyta wartosci podane przez uzytkownika w taki sposob, ze kazda spacja spowoduje wczytanie do kolejnej zmiennej
+read FILE1 FILE2 FILE3 FILE4
+
+#zmienna tablicowa
+ARRAY=($FILE1 $FILE2 $FILE3 $FILE4)
+
+#iteracja po kluczach tablicy tak aby moc modyfikowac i odczytywac wartosci z tablicy
+for INDEX in ${!ARRAY[*]}; do
+  #nadpisanie wartosci w tablicy poprzez przechwycenie wartosci zwracanej poprzez wyswietlenie w funkcji
+  ARRAY[$INDEX]=$(add_source_dir_prefix ${ARRAY[$INDEX]})
+  ARRAY[$INDEX]=$(add_txt_sufix ${ARRAY[$INDEX]})
+done
+
+for FILE_NAME in ${ARRAY[*]}; do
+  #sprawdzenie czy podany plik istnieje
+  if [ -f "$FILE_NAME" ]; then
+    #kopiuje podany plik do wskazanego fodleru
+    cp $FILE_NAME $DESTINATION_DIR
+    echo -e "File: $FILE_NAME copied into $DESTINATION_DIR"
+  else
+    echo -e "File: $FILE_NAME doesn't exits :( Sorry"
+  fi
+done
